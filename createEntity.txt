@@ -1,0 +1,931 @@
+import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+// --- Categories Table ---
+@Entity
+@Table(name = "categories")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Category {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Lob // For TEXT type
+    private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Category parent;
+
+    @Column(unique = true)
+    private String slug;
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
+
+// --- Brands Table ---
+@Entity
+@Table(name = "brands")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Brand {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Lob
+    private String description;
+
+    @Column(name = "logo_url", length = 500)
+    private String logoUrl;
+
+    @Column(length = 255)
+    private String website;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
+
+// --- Products Table ---
+@Entity
+@Table(name = "products")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Product {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Lob
+    private String description;
+
+    @Column(name = "short_description", length = 500)
+    private String shortDescription;
+
+    @Column(nullable = false, unique = true, length = 100)
+    private String sku;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @Column(name = "sale_price", precision = 10, scale = 2)
+    private BigDecimal salePrice;
+
+    @Column(name = "stock_quantity", nullable = false)
+    private Integer stockQuantity = 0;
+
+    @Column(precision = 8, scale = 2)
+    private BigDecimal weight;
+
+    @Column(length = 100)
+    private String dimensions;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    private Brand brand;
+
+    @Column(name = "featured_image", length = 500)
+    private String featuredImage;
+
+    // For JSON type, use @JdbcTypeCode(SqlTypes.JSON) from Hibernate 6+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private JsonNode gallery; // Using JsonNode for direct JSON mapping
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('active', 'inactive', 'draft') DEFAULT 'active'")
+    private ProductStatus status = ProductStatus.active;
+
+    @Column(name = "is_featured", nullable = false)
+    private Boolean isFeatured = false;
+
+    @Column(name = "meta_title", length = 255)
+    private String metaTitle;
+
+    @Lob
+    @Column(name = "meta_description")
+    private String metaDescription;
+
+    @Column(unique = true)
+    private String slug;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public enum ProductStatus {
+        active, inactive, draft
+    }
+}
+
+// --- Product Attributes Table ---
+@Entity
+@Table(name = "product_attributes")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductAttribute {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('text', 'number', 'select', 'multiselect', 'boolean') DEFAULT 'text'")
+    private AttributeType type = AttributeType.text;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private JsonNode options; // For JSON type
+
+    @Column(name = "is_required", nullable = false)
+    private Boolean isRequired = false;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    public enum AttributeType {
+        text, number, select, multiselect, boolean
+    }
+}
+
+// --- Product Attribute Values Table ---
+@Entity
+@Table(name = "product_attribute_values")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@IdClass(ProductAttributeValueId.class) // For composite primary key
+public class ProductAttributeValue {
+    @Id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @Id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "attribute_id", nullable = false)
+    private ProductAttribute attribute;
+
+    @Lob
+    private String value;
+}
+
+// Composite key for ProductAttributeValue
+class ProductAttributeValueId implements java.io.Serializable {
+    private Product product;
+    private ProductAttribute attribute;
+}
+
+
+// --- Users Table ---
+@Entity
+@Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
+    @Column(name = "first_name", length = 100)
+    private String firstName;
+
+    @Column(name = "last_name", length = 100)
+    private String lastName;
+
+    @Column(length = 20)
+    private String phone;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "ENUM('male', 'female', 'other')")
+    private Gender gender;
+
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('active', 'inactive', 'suspended') DEFAULT 'active'")
+    private UserStatus status = UserStatus.active;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public enum Gender {
+        male, female, other
+    }
+
+    public enum UserStatus {
+        active, inactive, suspended
+    }
+}
+
+// --- User Addresses Table ---
+@Entity
+@Table(name = "user_addresses")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserAddress {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('billing', 'shipping', 'both') DEFAULT 'both'")
+    private AddressType type = AddressType.both;
+
+    @Column(name = "first_name", length = 100)
+    private String firstName;
+
+    @Column(name = "last_name", length = 100)
+    private String lastName;
+
+    @Column(length = 255)
+    private String company;
+
+    @Column(name = "address_line_1", nullable = false)
+    private String addressLine1;
+
+    @Column(name = "address_line_2")
+    private String addressLine2;
+
+    @Column(nullable = false, length = 100)
+    private String city;
+
+    @Column(length = 100)
+    private String state;
+
+    @Column(name = "postal_code", length = 20)
+    private String postalCode;
+
+    @Column(nullable = false, length = 100)
+    private String country;
+
+    @Column(length = 20)
+    private String phone;
+
+    @Column(name = "is_default", nullable = false)
+    private Boolean isDefault = false;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public enum AddressType {
+        billing, shipping, both
+    }
+}
+
+// --- Shopping Carts Table ---
+@Entity
+@Table(name = "shopping_carts")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ShoppingCart {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @Column(name = "session_id")
+    private String sessionId;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
+
+// --- Cart Items Table ---
+@Entity
+@Table(name = "cart_items")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class CartItem {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id", nullable = false)
+    private ShoppingCart cart;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @Column(nullable = false)
+    private Integer quantity = 1;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
+
+// --- Orders Table ---
+@Entity
+@Table(name = "orders")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Order {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "order_number", nullable = false, unique = true, length = 50)
+    private String orderNumber;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded') DEFAULT 'pending'")
+    private OrderStatus status = OrderStatus.pending;
+
+    @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal totalAmount;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal subtotal;
+
+    @Column(name = "tax_amount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal taxAmount = BigDecimal.ZERO;
+
+    @Column(name = "shipping_amount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal shippingAmount = BigDecimal.ZERO;
+
+    @Column(name = "discount_amount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(nullable = false, length = 3)
+    private String currency = "VND";
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false, columnDefinition = "ENUM('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending'")
+    private PaymentStatus paymentStatus = PaymentStatus.pending;
+
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
+
+    @Column(name = "shipping_first_name", length = 100)
+    private String shippingFirstName;
+
+    @Column(name = "shipping_last_name", length = 100)
+    private String shippingLastName;
+
+    @Column(name = "shipping_company", length = 255)
+    private String shippingCompany;
+
+    @Column(name = "shipping_address_line_1", length = 255)
+    private String shippingAddressLine1;
+
+    @Column(name = "shipping_address_line_2", length = 255)
+    private String shippingAddressLine2;
+
+    @Column(name = "shipping_city", length = 100)
+    private String shippingCity;
+
+    @Column(name = "shipping_state", length = 100)
+    private String shippingState;
+
+    @Column(name = "shipping_postal_code", length = 20)
+    private String shippingPostalCode;
+
+    @Column(name = "shipping_country", length = 100)
+    private String shippingCountry;
+
+    @Column(name = "shipping_phone", length = 20)
+    private String shippingPhone;
+
+    @Column(name = "billing_first_name", length = 100)
+    private String billingFirstName;
+
+    @Column(name = "billing_last_name", length = 100)
+    private String billingLastName;
+
+    @Column(name = "billing_company", length = 255)
+    private String billingCompany;
+
+    @Column(name = "billing_address_line_1", length = 255)
+    private String billingAddressLine1;
+
+    @Column(name = "billing_address_line_2", length = 255)
+    private String billingAddressLine2;
+
+    @Column(name = "billing_city", length = 100)
+    private String billingCity;
+
+    @Column(name = "billing_state", length = 100)
+    private String billingState;
+
+    @Column(name = "billing_postal_code", length = 20)
+    private String billingPostalCode;
+
+    @Column(name = "billing_country", length = 100)
+    private String billingCountry;
+
+    @Column(name = "billing_phone", length = 20)
+    private String billingPhone;
+
+    @Lob
+    private String notes;
+
+    @Column(name = "shipped_at")
+    private LocalDateTime shippedAt;
+
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public enum OrderStatus {
+        pending, processing, shipped, delivered, cancelled, refunded
+    }
+
+    public enum PaymentStatus {
+        pending, paid, failed, refunded
+    }
+}
+
+// --- Order Items Table ---
+@Entity
+@Table(name = "order_items")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class OrderItem {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @Column(name = "product_name", nullable = false)
+    private String productName;
+
+    @Column(name = "product_sku", length = 100)
+    private String productSku;
+
+    @Column(nullable = false)
+    private Integer quantity;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal total;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+}
+
+// --- Coupons Table ---
+@Entity
+@Table(name = "coupons")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Coupon {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
+
+    @Column(length = 255)
+    private String name;
+
+    @Lob
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('fixed', 'percentage')")
+    private CouponType type;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal value;
+
+    @Column(name = "minimum_amount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal minimumAmount = BigDecimal.ZERO;
+
+    @Column(name = "maximum_discount", precision = 10, scale = 2)
+    private BigDecimal maximumDiscount;
+
+    @Column(name = "usage_limit")
+    private Integer usageLimit;
+
+    @Column(name = "used_count", nullable = false)
+    private Integer usedCount = 0;
+
+    @Column(name = "user_limit", nullable = false)
+    private Integer userLimit = 1;
+
+    @Column(name = "start_date")
+    private LocalDateTime startDate;
+
+    @Column(name = "end_date")
+    private LocalDateTime endDate;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public enum CouponType {
+        fixed, percentage
+    }
+}
+
+// --- Coupon Usage Table ---
+@Entity
+@Table(name = "coupon_usage")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class CouponUsage {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id", nullable = false)
+    private Coupon coupon;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
+
+    @Column(name = "discount_amount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal discountAmount;
+
+    @Column(name = "used_at", updatable = false)
+    private LocalDateTime usedAt = LocalDateTime.now();
+}
+
+// --- Product Reviews Table ---
+@Entity
+@Table(name = "product_reviews")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@AttributeOverride(name = "id", column = @Column(name = "id")) // Necessary for unique_user_product_order
+public class ProductReview {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private Order order;
+
+    @Column(nullable = false)
+    private Integer rating;
+
+    @Column(length = 255)
+    private String title;
+
+    @Lob
+    private String review;
+
+    @Column(name = "is_verified", nullable = false)
+    private Boolean isVerified = false;
+
+    @Column(name = "is_approved", nullable = false)
+    private Boolean isApproved = false;
+
+    @Column(name = "helpful_count", nullable = false)
+    private Integer helpfulCount = 0;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
+
+// --- Wishlists Table ---
+@Entity
+@Table(name = "wishlists")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@IdClass(WishlistId.class) // For composite primary key
+public class Wishlist {
+    @Id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+}
+
+// Composite key for Wishlist
+class WishlistId implements java.io.Serializable {
+    private User user;
+    private Product product;
+}
+
+// --- Payment Methods Table ---
+@Entity
+@Table(name = "payment_methods")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class PaymentMethod {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
+
+    @Lob
+    private String description;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private JsonNode config; // For JSON type
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder = 0;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+}
+
+// --- Shipping Methods Table ---
+@Entity
+@Table(name = "shipping_methods")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ShippingMethod {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
+
+    @Lob
+    private String description;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal cost;
+
+    @Column(name = "free_shipping_minimum", precision = 10, scale = 2)
+    private BigDecimal freeShippingMinimum;
+
+    @Column(name = "estimated_delivery_days")
+    private Integer estimatedDeliveryDays;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder = 0;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+}
+
+// --- Payment Transactions Table ---
+@Entity
+@Table(name = "payment_transactions")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class PaymentTransaction {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
+
+    @Column(name = "transaction_id", unique = true)
+    private String transactionId;
+
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal amount;
+
+    @Column(nullable = false, length = 3)
+    private String currency = "VND";
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('pending', 'completed', 'failed', 'cancelled', 'refunded') DEFAULT 'pending'")
+    private TransactionStatus status = TransactionStatus.pending;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "gateway_response", columnDefinition = "json")
+    private JsonNode gatewayResponse; // For JSON type
+
+    @Column(name = "processed_at")
+    private LocalDateTime processedAt;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    public enum TransactionStatus {
+        pending, completed, failed, cancelled, refunded
+    }
+}

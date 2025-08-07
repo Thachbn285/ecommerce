@@ -1,0 +1,18 @@
+package com.backend.ecommerce.utils;
+
+import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class ResponseDTO {
+    public String message;
+    private List<String> details;
+
+}
