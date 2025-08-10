@@ -1,18 +1,16 @@
 package com.backend.ecommerce.utils;
 
-import com.backend.ecommerce.entity.CustomUserDetail;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.stereotype.Component;
+
+import com.backend.ecommerce.entity.CustomUserDetail;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 
 @Component
 public class JwtTokenUtil {
@@ -32,28 +30,33 @@ public class JwtTokenUtil {
                 .setClaims(claims)
                 .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis()+expireTime))
+                .setExpiration(new Date(System.currentTimeMillis() + expireTime))
                 .signWith(SignatureAlgorithm.ES512, jwtSecret)
                 .compact();
     }
+
     public String getRoleFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(jwtSecret)
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(jwtSecret.getBytes())
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
         return claims.get("ROLE", String.class);
     }
+
     public String getUsernameFromToken(String token) {
-        return Jwts.parser()
-                .setSigningKey(jwtSecret)
+        return Jwts.parserBuilder()
+                .setSigningKey(jwtSecret.getBytes())
+                .build()
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
     }
 
     public Date getExpirationDateFromToken(String token) {
-        return Jwts.parser()
-                .setSigningKey(jwtSecret)
+        return Jwts.parserBuilder()
+                .setSigningKey(jwtSecret.getBytes())
+                .build()
                 .parseClaimsJws(token)
                 .getBody()
                 .getExpiration();
@@ -61,8 +64,9 @@ public class JwtTokenUtil {
 
     public boolean isValidateToken(String token) {
         try {
-            Claims claims = Jwts.parser()
-                    .setSigningKey(jwtSecret)
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(jwtSecret.getBytes())
+                    .build()
                     .parseClaimsJws(token)
                     .getBody();
             Date expiration = claims.getExpiration();
