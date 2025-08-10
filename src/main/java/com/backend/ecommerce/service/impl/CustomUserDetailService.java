@@ -1,13 +1,13 @@
 package com.backend.ecommerce.service.impl;
 
-import com.backend.ecommerce.entity.CustomUserDetail;
-import com.backend.ecommerce.entity.UserEntity;
-import com.backend.ecommerce.repository.IUserRepo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import com.backend.ecommerce.entity.CustomUserDetail;
+import com.backend.ecommerce.entity.UserEntity;
+import com.backend.ecommerce.repository.IUserRepo;
 
 @Service
 public class CustomUserDetailService implements UserDetailsService {

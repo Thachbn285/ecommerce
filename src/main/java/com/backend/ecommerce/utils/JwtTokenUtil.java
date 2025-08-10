@@ -4,6 +4,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.backend.ecommerce.entity.CustomUserDetail;
@@ -14,13 +16,11 @@ import io.jsonwebtoken.SignatureAlgorithm;
 
 @Component
 public class JwtTokenUtil {
-    private final String jwtSecret = "mySecretKeymySecretKeymySecretKeymySecretKey";
+    @Value("${JwtSecret}")
+    private String jwtSecret;
     private final long expireTime = 5 * 24 * 3600000;
-    private final CustomUserDetail customUserDetail;
-
-    public JwtTokenUtil(CustomUserDetail customUserDetail) {
-        this.customUserDetail = customUserDetail;
-    }
+    @Autowired
+    private CustomUserDetail customUserDetail;
 
     public String generateJwtToken(String username) {
         Map<String, Object> claims = new HashMap<>();

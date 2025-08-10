@@ -13,23 +13,35 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
-    @Autowired
-    private JwtTokenFilter jwtTokenFilter;
+        @Autowired
+        private JwtTokenFilter jwtTokenFilter;
 
-    @Bean
-    public SecurityFilterChain filterChainSecurityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
-                .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/products/all").permitAll()
-                        .requestMatchers("/login").permitAll()
-                        .requestMatchers("/register").permitAll()
-                        .requestMatchers("/products/**").permitAll()
-                        .anyRequest().authenticated())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .build();
-    }
+        @Bean
+        public SecurityFilterChain filterChainSecurityFilterChain(HttpSecurity http) throws Exception {
+                return http
+                                .csrf(AbstractHttpConfigurer::disable)
+                                .cors(AbstractHttpConfigurer::disable)
+                                .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                                .authorizeHttpRequests(auth -> auth
+
+                                                .requestMatchers("/products/all").permitAll()
+                                                .requestMatchers("/login").permitAll()
+                                                .requestMatchers("/register").permitAll()
+                                                .requestMatchers("/products/**").permitAll()
+
+                                                .requestMatchers("/user/all").hasRole("ADMIN")
+                                                .requestMatchers("/user/**").hasRole("ADMIN")
+                                                .requestMatchers("/user/create").hasRole("ADMIN")
+                                                .requestMatchers("/user/modify").hasRole("ADMIN")
+
+                                                .requestMatchers("/products/all").hasRole("ADMIN")
+                                                .requestMatchers("/products/**").hasRole("ADMIN")
+                                                .requestMatchers("/products/create").hasRole("ADMIN")
+                                                .requestMatchers("/products/modify").hasRole("ADMIN")
+
+                                                .anyRequest().authenticated())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .build();
+        }
 }

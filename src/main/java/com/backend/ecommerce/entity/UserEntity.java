@@ -66,7 +66,7 @@ public class UserEntity {
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE" + getRole().toUpperCase()));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + getRole().toUpperCase()));
         return authorities;
     }
 }
