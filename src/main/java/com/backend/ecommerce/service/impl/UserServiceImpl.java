@@ -3,12 +3,12 @@ package com.backend.ecommerce.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.backend.ecommerce.config.ModelMapperConfig;
 import com.backend.ecommerce.dto.request.RequestUserDTO;
 import com.backend.ecommerce.dto.response.ResponseUserDTO;
 import com.backend.ecommerce.entity.UserEntity;
@@ -71,10 +71,9 @@ public class UserServiceImpl implements IUserService {
     @Override
     public List<ResponseUserDTO> getAllUsers() {
         List<UserEntity> userEntities = userRepo.findAll();
-        List<ResponseUserDTO> Users = userEntities.stream()
-                .map(user -> modelMapper.map(userEntities, ResponseUserDTO.class))
-                .toList();
-        return Users;
+        return userEntities.stream()
+                .map(user -> modelMapper.map(user, ResponseUserDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override

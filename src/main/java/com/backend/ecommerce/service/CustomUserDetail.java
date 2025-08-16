@@ -1,8 +1,9 @@
-package com.backend.ecommerce.entity;
+package com.backend.ecommerce.service;
 
 import java.util.Collection;
 import java.util.Collections;
 
+import com.backend.ecommerce.entity.UserEntity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,14 +13,15 @@ import org.springframework.stereotype.Service;
 public class CustomUserDetail implements UserDetails {
 
     private UserEntity userEntity;
-    public UserEntity getUserEntity(UserEntity userEntity) {
-        return this.userEntity = userEntity;
-    }
 
+    public UserEntity getUserEntity(UserEntity userEntity) {
+        this.userEntity = userEntity;
+        return this.userEntity;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(new SimpleGrantedAuthority("USER_" + userEntity.getRole().toUpperCase()));
+        return Collections.singleton(new SimpleGrantedAuthority("ROLE_" + userEntity.getRole().name()));
     }
 
     @Override
@@ -29,7 +31,7 @@ public class CustomUserDetail implements UserDetails {
 
     @Override
     public String getUsername() {
-        return userEntity.getPhone();
+        return userEntity.getUsername();
     }
 
     @Override
@@ -49,7 +51,6 @@ public class CustomUserDetail implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return userEntity.getIsActive();
     }
-
 }
