@@ -1,10 +1,8 @@
 package com.backend.ecommerce.config;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
-import org.modelmapper.internal.Pair;
+import org.springframework.lang.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,7 +10,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.backend.ecommerce.entity.CustomUserDetail;
+import com.backend.ecommerce.service.CustomUserDetail;
 import com.backend.ecommerce.service.impl.CustomUserDetailService;
 import com.backend.ecommerce.utils.JwtTokenUtil;
 
@@ -30,7 +28,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private CustomUserDetailService customUserDetailService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         if (isByPassToken(request)) {
             filterChain.doFilter(request, response);
@@ -55,17 +54,15 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     }
 
     private boolean isByPassToken(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String method = request.getMethod();
 
-        List<Pair<String, String>> bypassToken = Arrays.asList(
-                Pair.of("/products/all", "GET"),
-                Pair.of("/login", "POST"),
-                Pair.of("/register", "POST"));
-        for (Pair<String, String> pair : bypassToken) {
-            if (request.getRequestURI().equals(pair.getLeft()) && request.getMethod().equals(pair.getRight())) {
-                return true;
-            }
-        }
-        return false;
-
+        // List of endpoints that don't require authentication
+        return (uri.equals("/products/all") && method.equals("GET")) ||
+                (uri.equals("/login") && method.equals("POST")) ||
+                (uri.equals("/register") && method.equals("POST")) ||
+                (uri.startsWith("/swagger-ui")) ||
+                (uri.startsWith("/api-docs")) ||
+                (uri.startsWith("/uploads/"));
     }
 }

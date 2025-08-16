@@ -3,6 +3,7 @@ package com.backend.ecommerce.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,8 @@ public class ProductServiceImpl implements IProductService {
     @Override
     public List<ProductDTO> findAllProducts() {
         List<ProductEntity> productEntities = productRepo.findAll();
-        return productEntities.stream().map(entity -> modelMapper.map(entity, ProductDTO.class)).toList();
+        return productEntities.stream().map(entity -> modelMapper.map(entity, ProductDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -75,4 +77,25 @@ public class ProductServiceImpl implements IProductService {
         details.add(detail);
         return responseDTO;
     }
+
+    @Override
+    public ResponseDTO delete(int id) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        List<String> details = new ArrayList<>();
+        Optional<ProductEntity> entity = productRepo.findById(id);
+        if (entity.isEmpty()) {
+            responseDTO.setMessage("Fail");
+            String detail = "Product is not exist, check your product id";
+            details.add(detail);
+            responseDTO.setDetails(details);
+            return responseDTO;
+        }
+        productRepo.deleteById(id);
+        String detail = "Delete successfully";
+        responseDTO.setMessage("SUCCESS");
+        details.add(detail);
+        responseDTO.setDetails(details);
+        return responseDTO;
+    }
+
 }

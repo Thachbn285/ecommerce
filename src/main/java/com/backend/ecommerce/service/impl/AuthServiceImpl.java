@@ -20,21 +20,26 @@ import com.backend.ecommerce.utils.ResponseDTO;
 public class AuthServiceImpl implements IAuthService {
     @Autowired
     private IUserRepo userRepo;
+    @Autowired
     private JwtTokenUtil jwtTokenUtil;
+    @Autowired
     private ModelMapper modelMapper;
-    private ResponseDTO responseDTO;
-    List<String> details = new ArrayList<>();
 
     @Override
     public ResponseDTO login(String username, String password) {
-        UserEntity entity = userRepo.findByPhone(password);
-        if (entity.getPhone() == null) {
-            responseDTO.message = "Error";
-            String detail = "username or password is incorrect ";
+        UserEntity entity = userRepo.findByPhone(username);
+        ResponseDTO responseDTO = new ResponseDTO();
+        List<String> details = new ArrayList<>();
+
+        if (entity == null) {
+            responseDTO.setMessage("Error");
+            String detail = "Username or password is incorrect";
             details.add(detail);
             responseDTO.setDetails(details);
             return responseDTO;
         }
+
+        // TODO: Add password verification here
         String token = jwtTokenUtil.generateJwtToken(username);
         responseDTO.setMessage("Success");
         details.add(token);
@@ -44,19 +49,25 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public ResponseDTO register(RequestUserDTO userDTO) {
-        UserEntity entity = userRepo.findByPhone(userDTO.getPhone());
-        if (entity.getPhone() != null) {
+        UserEntity existingEntity = userRepo.findByPhone(userDTO.getPhone());
+        ResponseDTO responseDTO = new ResponseDTO();
+        List<String> details = new ArrayList<>();
+
+        if (existingEntity != null) {
             responseDTO.setMessage("Error");
-            String detail = "User is existed";
+            String detail = "User already exists";
             details.add(detail);
             responseDTO.setDetails(details);
+            return responseDTO;
         }
+
         PasswordEncoder encoder = new BCryptPasswordEncoder();
-        entity = modelMapper.map(userDTO, UserEntity.class);
+        UserEntity entity = modelMapper.map(userDTO, UserEntity.class);
         entity.setPasswordHash(encoder.encode(userDTO.getPasswordHash()));
         userRepo.save(entity);
+
         responseDTO.setMessage("Success");
-        String detail = "User is registed";
+        String detail = "User registered successfully";
         details.add(detail);
         responseDTO.setDetails(details);
         return responseDTO;
