@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: ecommerce-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    region: singapore
+    plan: free
+    branch: main
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      - key: DATABASE_URL
+        value: jdbc:postgresql://dpg-d2g5kjggjchc73anedq0-a.singapore-postgres.render.com:5432/ecommerce_db_s7e1?sslmode=require
+      - key: DATABASE_USERNAME
+        value: ecommerce_db_s7e1_user
+      - key: DATABASE_PASSWORD
+        value: vvj4QlC8PQN2iUw6FiqP9E35TEl8EuQI
+      - key: JWT_SECRET
+        value: mySecretKeymySecretKeymySecretKeymySecretKeymySecretKey
+      - key: FILE_UPLOAD_DIR
+        value: /app/uploads/
+      - key: JAVA_OPTS
+        value: -Xmx1g -Xms512m -Dspring.profiles.active=production
