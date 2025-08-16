@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.backend.ecommerce.dto.ProductDTO;
@@ -17,10 +16,14 @@ import com.backend.ecommerce.utils.ResponseDTO;
 
 @Service
 public class ProductServiceImpl implements IProductService {
-    @Autowired
-    IProductRepo productRepo;
-    @Autowired
-    ModelMapper modelMapper;
+
+    private final IProductRepo productRepo;
+    private final ModelMapper modelMapper;
+
+    public ProductServiceImpl(IProductRepo productRepo, ModelMapper modelMapper) {
+        this.productRepo = productRepo;
+        this.modelMapper = modelMapper;
+    }
 
     @Override
     public List<ProductDTO> findAllProducts() {
